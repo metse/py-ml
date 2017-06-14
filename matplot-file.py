@@ -1,25 +1,33 @@
-import numpy as np
+import datetime as dt
 import matplotlib.pyplot as plt
+from matplotlib import style
+import matplotlib.dates as mdates
+from matplotlib.finance import candlestick_ohlc
+import pandas as pd
+import pandas_datareader.data as web
 
-#creating fictitious data
-mileage = np.random.randint(100, size=10)
-time = np.random.randint(100, size=10)
+style.use('ggplot')
 
-#using Numpy's mean and median methods
-mileage_mean = np.mean(mileage)
-mileage_median = np.median(mileage)
+#data frame
+df = web.DataReader('MSFT', 'google', dt.datetime(2012, 1, 1), dt.datetime(2017, 6, 6))
 
-#plt.hist(mileage)
-#plt.clf()
+#resampling the data
+df_ohlc = df[['Open', 'High', 'Low', 'Close']].resample('10D').ohlc()
+df_volume = df['Volume'].resample('10D').sum()
 
-#scatter plot
-plt.scatter(time, mileage)
+#resetting date index
+df_ohlc.reset_index(inplace=True)
 
-#labels
-plt.xlabel("Over Time")
-plt.ylabel("Mileage")
+df_ohlc['Date'] = df_ohlc['Date'].map(mdates.date2num)
 
-#grid
-plt.grid()
+#subplotting
+ax1 = plt.subplot2grid((6,1), (0,0), rowspan=5, colspan=1)
+ax2 = plt.subplot2grid((6,1), (5,0), rowspan=1, colspan=1, sharex=ax1)
+
+ax1.xaxis_date()
+
+candlestick_ohlc(ax1, df_ohlc.values, width=2, colorup='g')
+
+ax2.fill_between(df_volume.index.map(mdates.date2num), df_volume.values, 0)
 
 plt.show()
